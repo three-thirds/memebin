@@ -1,3 +1,5 @@
-<main class="container">
-    <h1 class="text-6xl">Hi there</h1>
-</main>
+<script lang="ts">
+	import { Button } from "$lib/components/ui/button/index.js";
+</script>
+
+<Button>Styled button</Button>
