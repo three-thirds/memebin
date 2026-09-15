@@ -1,3 +1,5 @@
+pub mod system;
+
 use tauri::Manager;
 use tauri_plugin_global_shortcut::Shortcut;
 
@@ -50,7 +52,10 @@ pub fn run() {
 
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![greet])
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            system::clipboard::copy_to_clipboard
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
