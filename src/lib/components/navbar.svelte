@@ -1,8 +1,8 @@
 <script lang="ts">
     export const NavButtons = [
         {href: "/Upload", text: "Upload"},
-        {href: "google.com", text: "Upload"},
-        {href: "google.com", text: "Upload"}
+        {href: "/Browse", text: "Browse"},
+        {href: "/Docs", text: "Docs"}
     ]
 </script>
 
