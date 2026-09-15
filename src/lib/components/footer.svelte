@@ -2,8 +2,8 @@
     import { openUrl } from "@tauri-apps/plugin-opener";
 </script>
 
-<footer class="flex flex-col items-center gap-2 border-b border-border bg-background px-4 h-14">
-<p class="font-bold pt-2">
+<footer class="flex flex-col items-center gap-2 bg-background px-4 h-14">
+<p class="font-bold">
     Made With ❤️ by 
     <a 
     class="text-muted-foreground hover:text-foreground transition-colors"

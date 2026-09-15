@@ -5,9 +5,9 @@
     import Footer from "$lib/components/footer.svelte";
 </script>
 
-<div class="min-h-screen flex flex-col">
+<div class="min-h-screen flex flex-col bg-background">
     <Navbar />
-    <main class="flex-1">
+    <main class="flex-1 bg-background">
         {@render children()}
     </main>
     <Footer />
