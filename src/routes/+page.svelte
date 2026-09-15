@@ -3,27 +3,27 @@
 
     export const Example = [
         {
-            image: "Hello there", 
+            image: "https://cdn.hackclub.com/01a0a4b5-fc23-7376-beb8-64e977a42f13/image.png", 
             name: "Hehe"
         },
         {
-            image: "Hello there", 
+            image: "https://cdn.hackclub.com/01a0a4b5-fc23-7376-beb8-64e977a42f13/image.png", 
             name: "Hehe"
         },
         {
-            image: "Hello there", 
+            image: "https://cdn.hackclub.com/01a0a4b5-fc23-7376-beb8-64e977a42f13/image.png", 
             name: "Hehe"
         },
         {
-            image: "Hello there", 
+            image: "https://cdn.hackclub.com/01a0a4b5-fc23-7376-beb8-64e977a42f13/image.png", 
             name: "Hehe"
         },
         {
-            image: "Hello there", 
+            image: "https://cdn.hackclub.com/01a0a4b5-fc23-7376-beb8-64e977a42f13/image.png", 
             name: "Hehe"
         },
         {
-            image: "Hello there", 
+            image: "https://cdn.hackclub.com/01a0a4b5-fc23-7376-beb8-64e977a42f13/image.png", 
             name: "Hehe"
         }
 
@@ -37,8 +37,8 @@
 <div class="grid gap-4 pt-8">
 {#each Example as example}
 <div class="flex flex-col gap-2 rounded-lg border p-4">
-    <p class="text-sm font-medium leading-none">{example.name}</p>
-    <p class="text-sm text-muted-foreground">{example.image}</p>
+    <img src={example.image} alt={example.name} class="text-sm font-medium leading-none w-24 h-24 object-cover" />
+    <!-- <p class="text-sm text-muted-foreground">{example.image}</p> -->
 </div>
 {/each}
 </div>
