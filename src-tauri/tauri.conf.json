@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Memebin",
+        "title": "memebin",
         "width": 800,
         "height": 600
       }
