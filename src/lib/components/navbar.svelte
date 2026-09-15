@@ -2,7 +2,7 @@
     export const NavButtons = [
         {href: "/Upload", text: "Upload"},
         {href: "/Browse", text: "Browse"},
-        {href: "/Docs", text: "Docs"}
+        {href: "https://github.com/three-thirds/memebin/", text: "Github"}
     ]
 </script>
 
