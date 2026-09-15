@@ -18,7 +18,7 @@
   </p>
 
   <button 
-  class="flex items-center gap-1.5 rounded-full border border-border bg-secondary/60 px-2 py-1 text-xs font-medium text-secondary-foreground"
+  class="flex items-center gap-1.5 rounded-full border border-border bg-secondary/60 px-2 py-1 text-xs font-medium text-secondary-foreground hover:bg-secondary cursor-pointer"
   onclick={() => {}}>
     <span>Actions</span>
     <kbd>Ctrl</kbd>
