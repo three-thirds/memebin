@@ -128,4 +128,7 @@
 		@apply font-sans;
 		background: transparent;
 	}
+	kbd {
+		@apply rounded border border-border bg-background px-1.5 py-0.5 font-mono text-[10px];
+	}
 }

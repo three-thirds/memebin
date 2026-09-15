@@ -2,23 +2,26 @@
     import { openUrl } from "@tauri-apps/plugin-opener";
 </script>
 
-<footer class="flex flex-col items-center gap-2 bg-background px-4 h-14">
-<p class="font-bold">
-    Made With ❤️ by 
-    <a 
-    class="text-muted-foreground hover:text-foreground transition-colors"
-    href="https://github.com/three-thirds"
-    onclick={(e) => { e.preventDefault(); openUrl("https://github.com/three-thirds"); }}>
-    Three Thirds
+<footer class="flex h-14 items-center justify-between gap-3 bg-background px-4">
+  <p class="text-xs text-muted-foreground">
+    Made With ❤️ by
+    <a
+      class="text-foreground transition-colors hover:text-muted-foreground"
+      href="https://github.com/three-thirds"
+      onclick={(e) => {
+        e.preventDefault();
+        openUrl("https://github.com/three-thirds");
+      }}
+    >
+      Three Thirds
     </a>
-</p>
-<p>
-    For 
-    <a 
-    class="text-muted-foreground hover:text-foreground transition-colors"
-    href="https://thirdspace.hackclub.com"
-    onclick={(e) => { e.preventDefault(); openUrl("https://thirdspace.hackclub.com"); }}>
-    Third Space
-    </a>
-</p>
+  </p>
+
+  <button 
+  class="flex items-center gap-1.5 rounded-full border border-border bg-secondary/60 px-2 py-1 text-xs font-medium text-secondary-foreground"
+  onclick={() => {}}>
+    <span>Actions</span>
+    <kbd>Ctrl</kbd>
+    <kbd>B</kbd>
+  </button>
 </footer>
