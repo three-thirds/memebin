@@ -2,7 +2,19 @@
     import { openUrl } from "@tauri-apps/plugin-opener";
     import * as Dialog from "$lib/components/ui/dialog/index.js";
     import { buttonVariants } from "$lib/components/ui/button/index.js";
+
+    let settingsOpen = $state(false);
+
+    function scanKeys(e: KeyboardEvent) {
+        const ctrlKeybleh = e.ctrlKey || e.metaKey; 
+        if (ctrlKeybleh && e.key === "b") {
+            settingsOpen = true;
+        }
+    }
 </script>
+
+<svelte:window onkeydown={scanKeys}></svelte:window>
+
 
 <footer class="fixed bottom-0 left-0 right-0 flex items-center justify-between gap-2 border-t bg-background/50 p-2 backdrop-blur-md">
   <p class="text-xs text-muted-foreground">
@@ -19,7 +31,7 @@
     </a>
   </p>
 
-    <Dialog.Root>
+    <Dialog.Root bind:open={settingsOpen}>
     <Dialog.Trigger>
         <button 
         class="flex items-center gap-1.5 rounded-full border border-border bg-secondary/60 px-2 py-1 text-xs font-medium text-secondary-foreground hover:bg-secondary cursor-pointer"

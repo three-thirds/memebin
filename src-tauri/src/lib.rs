@@ -2,6 +2,7 @@ mod storage;
 
 use storage::Meme;
 use tauri::AppHandle;
+use tauri::Manager;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -24,7 +25,28 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
+        .setup(|app| {
+            #[cfg(target_os = "macos")]
+            {
+                use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial};
+                let window = app.get_webview_window("main").unwrap();
+                window.with_webview(|webview| {
+                    #[cfg(target_os = "macos")]
+                    unsafe {
+                        use objc2::msg_send;
+                        use objc2::runtime::AnyObject;
+                        let ns_view: *mut AnyObject = webview.ns_window() as *mut AnyObject;
+                        let _: () = msg_send![ns_view, setOpaque: false];
+                    }
+                }).ok();
+                apply_vibrancy(&window, NSVisualEffectMaterial::HudWindow, None, None)
+                    .expect("Failed to apply vibrancy — macOS 10.13+ required");
+            }
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![greet, ensure_storage, save_meme])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
+
+

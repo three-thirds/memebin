@@ -25,8 +25,9 @@
         },
 
     ]
+
 </script>
- 
+
 <div class="flex flex-col items-stretch gap-8 sm:flex-row">
 <Input placeholder="Search for anything..." class="rounded-md"/>
 </div>
