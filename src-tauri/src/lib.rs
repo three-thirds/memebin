@@ -1,5 +1,7 @@
 pub mod system;
 
+use std::sync::Mutex;
+
 use tauri::Manager;
 use tauri_plugin_global_shortcut::Shortcut;
 mod storage;
@@ -26,6 +28,9 @@ fn save_meme(app: AppHandle, source_path: String, name: Option<String>) -> Resul
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .manage(Mutex::new(
+            arboard::Clipboard::new().expect("Failed to initialize clipboard thingy"),
+        ))
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             if let Some(window) = app.get_webview_window("main") {
                 if window.is_visible().unwrap_or(false) {
