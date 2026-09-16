@@ -38,7 +38,7 @@
 
 <div class="grid gap-4 pt-8">
 {#each Example as example}
-<div class="flex flex-col gap-2 rounded-lg border p-4">
+<div class="flex flex-col gap-2 rounded-lg border p-4 border-border bg-background/50 hover:bg-background transition-colors">
     <Dialog.Root>
         <Dialog.Trigger>
             <img src={example.image} alt={example.name} class="text-sm font-medium leading-none w-24 h-24 object-cover" />
