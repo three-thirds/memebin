@@ -7,7 +7,7 @@
 
 <div class="min-h-screen flex flex-col bg-background">
     <!-- <Navbar /> -->
-    <main class="flex-1 bg-background p-3">
+    <main class="flex-1 bg-background p-3 pb-15">
         {@render children()}
     </main>
     <Footer />
