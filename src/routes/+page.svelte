@@ -40,8 +40,8 @@
 {#each Example as example}
 <div class="flex flex-col gap-2 rounded-lg border p-4 border-border bg-background/50 hover:bg-background transition-colors">
     <Dialog.Root>
-        <Dialog.Trigger>
-            <img src={example.image} alt={example.name} class="text-sm font-medium leading-none w-24 h-24 object-cover" />
+        <Dialog.Trigger class="inline-block w-fit">
+            <img src={example.image} alt={example.name} class="tw-24 h-24 object-cover rounded-md ring-1 ring-border transition-all duration-200 hover:ring-2 hover:ring-accent-foreground hover:scale-105 hover:brightness-110 cursor-pointer" />
         </Dialog.Trigger>
         <Dialog.Portal>
             <Dialog.Overlay />
@@ -61,8 +61,6 @@
             </Dialog.Content>
         </Dialog.Portal>
     </Dialog.Root>
-    
-    <!-- <p class="text-sm text-muted-foreground">{example.image}</p> -->
 </div>
 {/each}
 </div>
