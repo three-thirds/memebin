@@ -35,8 +35,13 @@ pub fn run() {
                     unsafe {
                         use objc2::msg_send;
                         use objc2::runtime::AnyObject;
-                        let ns_view: *mut AnyObject = webview.ns_window() as *mut AnyObject;
-                        let _: () = msg_send![ns_view, setOpaque: false];
+                        let ns_window: *mut AnyObject = webview.ns_window() as *mut AnyObject;
+                        let _: () = msg_send![ns_window, setOpaque: false];
+                        let content_view: *mut AnyObject = msg_send![ns_window, contentView];
+                        let _: () = msg_send![content_view, setWantsLayer: true];
+                        let layer: *mut AnyObject = msg_send![content_view, layer];
+                        let _: () = msg_send![layer, setCornerRadius: 16.0f64];
+                        let _: () = msg_send![layer, setMasksToBounds: true];
                     }
                 }).ok();
                 apply_vibrancy(&window, NSVisualEffectMaterial::HudWindow, None, None)

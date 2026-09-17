@@ -16,7 +16,7 @@
 <svelte:window onkeydown={scanKeys}></svelte:window>
 
 
-<footer class="fixed bottom-0 left-0 right-0 flex items-center justify-between gap-2 border-t bg-background/50 p-2 backdrop-blur-md">
+<footer class="absolute right-0 bottom-0 left-0 flex items-center justify-between gap-2 border-t bg-background/50 p-2 backdrop-blur-md">
   <p class="text-xs text-muted-foreground">
     Made With ❤️ by
     <a
