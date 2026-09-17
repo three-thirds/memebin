@@ -37,7 +37,7 @@
 <div class="flex flex-row gap-2 rounded-lg border p-4 border-border bg-background/50 hover:bg-background transition-colors min-w-0">
     <Dialog.Root>
         <Dialog.Trigger class="inline-block w-fit shrink-0">
-            <img src={example.image} alt={example.name} class="w-48 h-full object-cover rounded-md ring-1 ring-border transition-all duration-200 hover:ring-2 hover:ring-accent-foreground hover:scale-105 hover:brightness-110 cursor-pointer" />
+            <img src={example.image} alt={example.name} class="w-48 h-full object-cover rounded-md ring-1 ring-border transition-all duration-200 hover:ring-accent-foreground hover:brightness-110 cursor-pointer" />
         </Dialog.Trigger>
         <Dialog.Portal>
             <Dialog.Overlay />
