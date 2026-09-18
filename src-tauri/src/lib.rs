@@ -2,9 +2,7 @@ pub mod system;
 
 mod storage;
 
-use storage::{
-    Binding, ImportMode, LibraryStats, Manifest, Meme, MemeSort, RepairReport,
-};
+use storage::{Binding, ImportMode, LibraryStats, Manifest, Meme, MemeSort, RepairReport};
 use tauri::AppHandle;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
@@ -130,11 +128,7 @@ fn export_manifest(app: AppHandle) -> Result<Manifest, String> {
 }
 
 #[tauri::command]
-fn import_manifest(
-    app: AppHandle,
-    manifest: Manifest,
-    mode: ImportMode,
-) -> Result<u64, String> {
+fn import_manifest(app: AppHandle, manifest: Manifest, mode: ImportMode) -> Result<u64, String> {
     storage::import_manifest(&app, manifest, mode)
 }
 
@@ -170,6 +164,7 @@ pub fn run() {
             export_manifest,
             import_manifest,
             system::clipboard::copy_to_clipboard,
+        ])
         //Hide when someone clicks out of window
         .on_window_event(system::window::handle_window_event)
         .setup(|app| {
