@@ -1,6 +1,6 @@
 pub mod system;
 
-mod storage;
+pub mod storage;
 
 use storage::{Binding, ImportMode, LibraryStats, Manifest, Meme, MemeSort, RepairReport};
 use tauri::AppHandle;

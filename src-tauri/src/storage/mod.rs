@@ -111,7 +111,7 @@ fn find_by_hash(dir: &Path, hash: &str) -> Result<Option<Meme>, String> {
     Ok(None)
 }
 
-fn list_memes_in_dir(dir: &Path) -> Result<Vec<Meme>, String> {
+pub fn list_memes_in_dir(dir: &Path) -> Result<Vec<Meme>, String> {
     if !dir.exists() {
         return Ok(Vec::new());
     }
@@ -167,7 +167,7 @@ pub fn meme_matches_query(meme: &Meme, query: &str) -> bool {
     meme.tags.iter().any(|t| t.to_lowercase().contains(&q))
 }
 
-fn persist_new_meme(
+pub fn persist_new_meme(
     dir: &Path,
     bytes: &[u8],
     extension: &str,
@@ -374,9 +374,7 @@ pub fn repair_orphans(app: &AppHandle) -> Result<RepairReport, String> {
     let mut removed_media = 0u64;
 
     let entries = fs::read_dir(&dir).map_err(|e| format!("failed to read memes dir: {e}"))?;
-    let paths: Vec<PathBuf> = entries
-        .filter_map(|e| e.ok().map(|e| e.path()))
-        .collect();
+    let paths: Vec<PathBuf> = entries.filter_map(|e| e.ok().map(|e| e.path())).collect();
 
     for path in &paths {
         let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
