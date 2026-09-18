@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "memebin",
+  "productName": "Memebin",
   "version": "0.1.0",
-  "identifier": "com.threethirds.tauri-app",
+  "identifier": "com.three-thirds.memebin",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1420",
@@ -12,9 +12,14 @@
   "app": {
     "windows": [
       {
-        "title": "memebin",
-        "width": 800,
-        "height": 600
+        "title": "Memebin",
+        "width": 750,
+        "height": 474,
+        "decorations": false,
+        "alwaysOnTop": true,
+        "center": true,
+        "transparent": true,
+        "resizable": false
       }
     ],
     "security": {

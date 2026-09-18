@@ -1,3 +1,5 @@
+pub mod system;
+
 mod storage;
 
 use storage::{
@@ -139,6 +141,10 @@ fn import_manifest(
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(
+            system::window::handle_single_instance,
+        ))
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             greet,
@@ -163,7 +169,13 @@ pub fn run() {
             resolve_trigger_path,
             export_manifest,
             import_manifest,
-        ])
+            system::clipboard::copy_to_clipboard,
+        //Hide when someone clicks out of window
+        .on_window_event(system::window::handle_window_event)
+        .setup(|app| {
+            system::setup(app)?;
+            Ok(())
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
