@@ -26,13 +26,20 @@
 
     ]
 
+    let ChangeMenu = $state(false)
+
+    function handleRightClick(e: MouseEvent) {
+        e.preventDefault();
+        ChangeMenu = true;
+    }
+
 </script>
 
 <div class="flex flex-col items-stretch gap-8 sm:flex-row">
 <Input placeholder="Search for anything..." class="rounded-md"/>
 </div>
 
-<div class="grid grid-cols-2 gap-4 pt-8">
+<div class="grid grid-cols-2 gap-4 pt-8di">
 {#each Example as example}
 <div class="flex flex-row gap-2 rounded-lg border p-4 border-border bg-background/50 hover:bg-background transition-colors min-w-0">
     <Dialog.Root>
@@ -63,7 +70,7 @@
         </Dialog.Portal>
     </Dialog.Root>
     
-    <div class="flex min-w-0 flex-col gap-1 items-start justify-between border-l border-dashed p-2">
+    <div role="button" tabindex="0" aria-haspopup="menu" oncontextmenu={handleRightClick} class="flex min-w-0 flex-col gap-1 items-start justify-between border-l border-dashed p-2">
         <div>
             <h3 class="text-sm font-medium leading-none">{example.name}</h3>
             <h4 class="text-xs text-muted-foreground"><b>Uses:</b> {example.uses}</h4>
@@ -74,6 +81,33 @@
             <kbd class="max-w-16 truncate">{example.tag}</kbd>
         </p>
     </div>
+
+    <Dialog.Root bind:open={ChangeMenu}>
+        <Dialog.Portal>
+            <Dialog.Overlay />
+            <Dialog.Content class="flex flex-col gap-4 p-6 px-6 pb-8">
+                <Dialog.Header>
+                    <Dialog.Title>{example.name}</Dialog.Title>
+                    <Dialog.Description>
+                        Edit
+                    </Dialog.Description>
+                </Dialog.Header>
+                <img src={example.image} alt={example.name} class="text-sm font-medium leading-none w-48 h-48 object-cover rounded-md" />
+                <p 
+                class="flex max-w-full min-w-0 items-center gap-1.5 overflow-hidden rounded-2xl border border-border bg-secondary/60 px-2 py-1 text-xs font-medium text-secondary-foreground hover:bg-secondary cursor-pointer">
+                    <IconTag stroke={2} size={16.7} class="shrink-0"/>
+                    <kbd class="min-w-0 truncate">{example.tag}</kbd>
+                </p>
+                <Dialog.Footer class="sm:justify-start">
+                    <Dialog.Close class={buttonVariants({ variant: "secondary" })}>
+                        Close
+                    </Dialog.Close>
+                </Dialog.Footer>
+            </Dialog.Content>
+        </Dialog.Portal>
+    </Dialog.Root>
 </div>
 {/each}
 </div>
+
+
