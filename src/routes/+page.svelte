@@ -3,6 +3,8 @@
     import * as Dialog from "$lib/components/ui/dialog/index.js";
     import { buttonVariants } from "$lib/components/ui/button/index.js";
     import { IconTag } from '@tabler/icons-svelte-runes';
+    import { IconStar,IconStarFilled} from '@tabler/icons-svelte-runes';
+    import Starred from "$lib/components/starred.svelte";
 
     export const Example = [
         {
@@ -32,6 +34,8 @@
         e.preventDefault();
         ChangeMenu = true;
     }
+
+    let starred = $state(false)
 
 </script>
 
@@ -74,6 +78,7 @@
         <div>
             <h3 class="text-sm font-medium leading-none">{example.name}</h3>
             <h4 class="text-xs text-muted-foreground"><b>Uses:</b> {example.uses}</h4>
+            <Starred />
         </div>
         <p 
         class="flex max-w-full min-w-0 items-center gap-1.5 overflow-hidden rounded-2xl border border-border bg-secondary/60 px-2 py-1 text-xs font-medium text-secondary-foreground hover:bg-secondary cursor-pointer">
@@ -87,9 +92,9 @@
             <Dialog.Overlay />
             <Dialog.Content class="flex flex-col gap-4 p-6 px-6 pb-8">
                 <Dialog.Header>
-                    <Dialog.Title>{example.name}</Dialog.Title>
+                    <Dialog.Title>Edit</Dialog.Title>
                     <Dialog.Description>
-                        Edit
+                        {example.name}
                     </Dialog.Description>
                 </Dialog.Header>
                 <img src={example.image} alt={example.name} class="text-sm font-medium leading-none w-48 h-48 object-cover rounded-md" />
@@ -98,6 +103,9 @@
                     <IconTag stroke={2} size={16.7} class="shrink-0"/>
                     <kbd class="min-w-0 truncate">{example.tag}</kbd>
                 </p>
+                <input placeholder="Name" class="rounded-md border-2 p-2 min-w-0"/>
+                <input placeholder="Description" class="rounded-md border-2 p-2 min-w-0"/>
+                <input placeholder="Edit Tag" class="rounded-md border-2 p-2 min-w-0"/>
                 <Dialog.Footer class="sm:justify-start">
                     <Dialog.Close class={buttonVariants({ variant: "secondary" })}>
                         Close
