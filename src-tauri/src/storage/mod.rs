@@ -1,13 +1,16 @@
 mod bindings;
 mod meme;
+mod search;
 
 pub use bindings::Binding;
 pub use meme::Meme;
+pub use search::{SearchHit, SearchOptions};
 
 use bindings::{
     load_bindings, normalize_trigger, remove_binding_by_trigger, save_bindings, upsert_binding,
 };
 use meme::{read_sidecar, write_sidecar};
+use search::{collect_tags, rank_memes};
 
 use sha2::{Digest, Sha256};
 use std::fs;
@@ -156,17 +159,6 @@ fn sort_memes(mut memes: Vec<Meme>, sort: MemeSort) -> Vec<Meme> {
     memes
 }
 
-pub fn meme_matches_query(meme: &Meme, query: &str) -> bool {
-    let q = query.trim().to_lowercase();
-    if q.is_empty() {
-        return true;
-    }
-    if meme.name.to_lowercase().contains(&q) {
-        return true;
-    }
-    meme.tags.iter().any(|t| t.to_lowercase().contains(&q))
-}
-
 fn persist_new_meme(
     dir: &Path,
     bytes: &[u8],
@@ -313,11 +305,24 @@ pub fn delete_meme(app: &AppHandle, id: &str) -> Result<(), String> {
 }
 
 pub fn search_memes(app: &AppHandle, query: &str) -> Result<Vec<Meme>, String> {
-    let memes = list_memes(app)?;
-    Ok(memes
+    Ok(search_ranked(app, query, SearchOptions::default())?
         .into_iter()
-        .filter(|m| meme_matches_query(m, query))
+        .map(|h| h.meme)
         .collect())
+}
+
+pub fn search_ranked(
+    app: &AppHandle,
+    query: &str,
+    opts: SearchOptions,
+) -> Result<Vec<SearchHit>, String> {
+    let memes = list_memes_in_dir(&memes_dir(app)?)?;
+    Ok(rank_memes(&memes, query, &opts))
+}
+
+pub fn list_tags(app: &AppHandle) -> Result<Vec<String>, String> {
+    let memes = list_memes_in_dir(&memes_dir(app)?)?;
+    Ok(collect_tags(&memes))
 }
 
 pub fn update_meme(
@@ -523,26 +528,5 @@ mod tests {
     #[test]
     fn normalize_extension_rejects_exe() {
         assert!(normalize_extension("exe").is_err());
-    }
-
-    #[test]
-    fn search_matches_name_and_tags() {
-        let meme = Meme {
-            id: "1".into(),
-            name: "Funny Cat".into(),
-            filename: "1.gif".into(),
-            extension: "gif".into(),
-            tags: vec!["lol".into(), "animals".into()],
-            size_bytes: 10,
-            content_hash: "abc".into(),
-            favorite: false,
-            use_count: 0,
-            last_used_at: None,
-            created_at: "t".into(),
-            updated_at: "t".into(),
-        };
-        assert!(meme_matches_query(&meme, "cat"));
-        assert!(meme_matches_query(&meme, "LOL"));
-        assert!(!meme_matches_query(&meme, "dog"));
     }
 }

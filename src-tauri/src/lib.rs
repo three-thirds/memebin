@@ -2,7 +2,10 @@ pub mod system;
 
 mod storage;
 
-use storage::{Binding, ImportMode, LibraryStats, Manifest, Meme, MemeSort, RepairReport};
+use storage::{
+    Binding, ImportMode, LibraryStats, Manifest, Meme, MemeSort, RepairReport, SearchHit,
+    SearchOptions,
+};
 use tauri::AppHandle;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
@@ -65,6 +68,20 @@ fn delete_meme(app: AppHandle, id: String) -> Result<(), String> {
 #[tauri::command]
 fn search_memes(app: AppHandle, query: String) -> Result<Vec<Meme>, String> {
     storage::search_memes(&app, &query)
+}
+
+#[tauri::command]
+fn search_ranked(
+    app: AppHandle,
+    query: String,
+    opts: Option<SearchOptions>,
+) -> Result<Vec<SearchHit>, String> {
+    storage::search_ranked(&app, &query, opts.unwrap_or_default())
+}
+
+#[tauri::command]
+fn list_tags(app: AppHandle) -> Result<Vec<String>, String> {
+    storage::list_tags(&app)
 }
 
 #[tauri::command]
@@ -151,6 +168,8 @@ pub fn run() {
             meme_path,
             delete_meme,
             search_memes,
+            search_ranked,
+            list_tags,
             update_meme,
             record_use,
             set_favorite,
