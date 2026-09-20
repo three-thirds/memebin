@@ -16,7 +16,19 @@
   let selectedIndex = $state(0);
   let selectedMeme = $state<Meme | null>(null);
   let searchInput = $state<HTMLInputElement | null>(null);
+  let cardElements = $state<HTMLElement[]>([]);
 
+  // 2. Automatically scroll whenever selectedIndex changes!
+  $effect(() => {
+    const el = cardElements[selectedIndex];
+    if (el) {
+      el.scrollIntoView({
+        block: "nearest",
+        inline: "nearest",
+        behavior: "auto",
+      });
+    }
+  });
   onMount(() => {
     async function init() {
       try {
@@ -131,6 +143,7 @@
     <div class="grid grid-cols-2 gap-4 pb-2">
       {#each memes as meme, index (meme.id)}
         <div
+          bind:this={cardElements[index]}
           role="button"
           tabindex="0"
           class="flex flex-row gap-2 rounded-lg border p-4 border-border transition-all min-w-0 cursor-pointer {index ===
