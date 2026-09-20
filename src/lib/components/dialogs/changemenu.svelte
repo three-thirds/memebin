@@ -57,7 +57,19 @@
 </script>
 
 <Dialog.Root bind:open>
-  <Dialog.Content class="sm:max-w-lg">
+  <Dialog.Content
+    class="sm:max-w-lg bg-card/95 backdrop-blur-xl border border-border shadow-2xl"
+    onkeydown={(e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        handleSave();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        open = false;
+      }
+    }}
+  >
     <Dialog.Header>
       <Dialog.Title>Edit</Dialog.Title>
       <Dialog.Description>
@@ -104,4 +116,3 @@
     </Dialog.Footer>
   </Dialog.Content>
 </Dialog.Root>
-
