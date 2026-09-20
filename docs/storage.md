@@ -4,11 +4,11 @@ This is the local GIF library for memebin. If you are wiring the overlay picker,
 
 Storage owns files on disk, meme metadata, bindings, and the Tauri commands that talk to them. System integration owns the global hotkey, picker chrome, and clipboard/paste. Backend owns remote sync and accounts later, using the manifest shape described below. Storage never registers OS hotkeys and never touches the clipboard.
 
-For ranked search (`search_memes`, `search_ranked`, `list_tags`), see [search.md](search.md).
+For ranked search (`search_memes`, `search_ranked`, `list_tags`, `suggest_tags`), see [search.md](search.md). Note: `search_ranked` returns `{ hits, metrics }` (not a bare array).
 
 ## Where files live
 
-Everything sits under Tauri’s `app_data_dir()`, not in the git repo. There is a `memes/` folder of media files plus JSON sidecars, and a top-level `bindings.json` that maps triggers to meme ids.
+Everything sits under Tauri’s `app_data_dir()`, not in the git repo. There is a `memes/` folder of media files plus JSON sidecars, a top-level `bindings.json` that maps triggers to meme ids, and an optional `search_synonyms.json` for local search expansions (see [search.md](search.md)).
 
 On Windows that root is typically under `%APPDATA%\<app identifier>\`. On macOS it is under `~/Library/Application Support/<identifier>/`. On Linux it is under `~/.local/share/<identifier>/`. The identifier comes from `tauri.conf.json` (for example `com.threethirds.tauri-app`).
 
@@ -18,9 +18,9 @@ Each meme is stored as `<id>.<ext>` next to `<id>.json`. The JSON is the source 
 
 ## What a meme looks like
 
-A meme has an `id` (UUID), a display `name`, a `filename` like `<id>.gif`, and an `extension`. It can have `tags`, a `size_bytes` count, and a `content_hash` (SHA-256 hex of the file bytes, used for dedup). `favorite` is the picker star. `use_count` and optional `last_used_at` (RFC3339) track usage after paste. `created_at` and `updated_at` are also RFC3339 UTC.
+A meme has an `id` (UUID), a display `name`, a `filename` like `<id>.gif`, and an `extension`. It can have `tags`, optional `aliases` (short names scored by search), a `size_bytes` count, and a `content_hash` (SHA-256 hex of the file bytes, used for dedup). `favorite` is the picker star. `use_count` and optional `last_used_at` (RFC3339) track usage after paste. `created_at` and `updated_at` are also RFC3339 UTC.
 
-Older sidecars that omit newer fields still load. Missing tags become an empty list, favorite defaults to false, use_count defaults to zero, and so on.
+Older sidecars that omit newer fields still load. Missing tags or aliases become an empty list, favorite defaults to false, use_count defaults to zero, and so on.
 
 ## Bindings
 
@@ -48,7 +48,7 @@ Failures come back as string errors. Tauri usually camelCases arguments from the
 
 `get_meme` loads one sidecar by `id`. `meme_path` returns the absolute filesystem path to the media file — that is the paste handoff. `delete_meme` removes media and JSON and also drops any bindings pointing at that id.
 
-`update_meme` patches optional `name` and/or `tags` and bumps `updated_at`. `set_favorite` sets the star. `record_use` increments `use_count` and sets `last_used_at`; call it after a successful paste.
+`update_meme` patches optional `name`, `tags`, and/or `aliases` and bumps `updated_at`. `set_favorite` sets the star. `record_use` increments `use_count` and sets `last_used_at`; call it after a successful paste.
 
 `library_stats` returns `count`, `favorites`, and `total_bytes`. `repair_orphans` is described above.
 

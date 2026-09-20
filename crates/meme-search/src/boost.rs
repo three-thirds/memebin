@@ -28,7 +28,7 @@ pub(crate) fn browse_total<T: Searchable>(item: &T, reasons: &mut Vec<String>) -
     total
 }
 
-/// Extra points after all text tokens already matched.
+/// Extra points after all text groups already matched.
 pub(crate) fn query_soft_boosts<T: Searchable>(
     item: &T,
     parsed: &ParsedQuery,
@@ -44,7 +44,16 @@ pub(crate) fn query_soft_boosts<T: Searchable>(
     extra += recency(item.last_used_at()) * 0.1;
 
     let name = fold_case(item.name());
-    if parsed.tokens.len() > 1 && parsed.tokens.iter().all(|t| name.contains(t)) {
+    let groups: Vec<&Vec<String>> = parsed
+        .must_groups
+        .iter()
+        .filter(|g| !g.is_empty())
+        .collect();
+    if groups.len() > 1
+        && groups
+            .iter()
+            .all(|g| g.iter().any(|alt| name.contains(alt)))
+    {
         extra += 15.0;
         reasons.push("boost:name-coverage".into());
     }
