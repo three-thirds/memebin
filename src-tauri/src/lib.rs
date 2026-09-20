@@ -26,7 +26,7 @@ fn save_meme(
     name: Option<String>,
     tags: Option<Vec<String>>,
 ) -> Result<Meme, String> {
-    storage::save_meme(&app, std::path::Path::new(&source_path), name,  tags)
+    storage::save_meme(&app, std::path::Path::new(&source_path), name, tags)
 }
 
 #[tauri::command]
@@ -195,6 +195,7 @@ pub fn run() {
             export_manifest,
             import_manifest,
             system::clipboard::copy_to_clipboard,
+            system::clipboard::paste_from_clipboard,
             system::window::set_popup_shortcut,
         ])
         // Hide when someone clicks out of window
@@ -204,8 +205,8 @@ pub fn run() {
             {
                 use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial};
                 let window = app.get_webview_window("main").unwrap();
-                window.with_webview(|webview| {
-                    unsafe {
+                window
+                    .with_webview(|webview| unsafe {
                         use objc2::msg_send;
                         use objc2::runtime::AnyObject;
                         let ns_window: *mut AnyObject = webview.ns_window() as *mut AnyObject;
@@ -215,8 +216,8 @@ pub fn run() {
                         let layer: *mut AnyObject = msg_send![content_view, layer];
                         let _: () = msg_send![layer, setCornerRadius: 16.0f64];
                         let _: () = msg_send![layer, setMasksToBounds: true];
-                    }
-                }).ok();
+                    })
+                    .ok();
                 apply_vibrancy(&window, NSVisualEffectMaterial::HudWindow, None, None)
                     .expect("Failed to apply vibrancy — macOS 10.13+ required");
             }
@@ -229,4 +230,3 @@ pub fn run() {
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
-

@@ -165,4 +165,8 @@ export const api = {
     const window = getCurrentWebviewWindow();
     await window.hide();
   },
+
+  async pasteFromClipboard(): Promise<Meme> {
+    return await invoke<Meme>('paste_from_clipboard');
+  },
 };
