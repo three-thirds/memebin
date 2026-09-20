@@ -1,7 +1,9 @@
-use std::{borrow::Cow, path::Path, sync::Mutex};
+use std::{borrow::Cow, io::Cursor, path::Path, sync::Mutex};
 
 use arboard::{Clipboard, ImageData};
-use tauri::State;
+use tauri::{AppHandle, State};
+
+use crate::storage::Meme;
 
 /// Reads an image from the disk, decodes it into raw RGBA pixels
 /// and places it into OS clipboard
@@ -48,6 +50,38 @@ pub fn copy_to_clipboard(
         .lock()
         .map_err(|e| format!("Failed to lock clipboard mutex: {}", e))?;
     copy_image_with_clipboard(&mut clipboard, Path::new(&file_path))
+}
+
+#[tauri::command]
+pub fn paste_from_clipboard(
+    app: AppHandle,
+    state: State<'_, Mutex<Clipboard>>,
+) -> Result<Meme, String> {
+    let mut clipboard = state.lock().map_err(|e| e.to_string())?;
+
+    let img_data = clipboard
+        .get_image()
+        .map_err(|e| format!("No Image found on clipboard: {e}"))?;
+
+    let rgba = image::RgbaImage::from_raw(
+        img_data.width as u32,
+        img_data.height as u32,
+        img_data.bytes.into_owned(),
+    )
+    .ok_or("Failed to create image buffer from clipboard")?;
+
+    let mut png_bytes = Vec::new();
+    let mut cursor = Cursor::new(&mut png_bytes);
+    rgba.write_to(&mut cursor, image::ImageFormat::Png)
+        .map_err(|e| format!("Failed to encode clipboard image to PNG: {e}"))?;
+
+    crate::storage::save_meme_bytes(
+        &app,
+        png_bytes,
+        "png".to_string(),
+        Some("Pasted Meme".to_string()),
+        Some(vec!["pasted".to_string()]),
+    )
 }
 
 #[cfg(test)]
