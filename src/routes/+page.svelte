@@ -47,7 +47,7 @@
 <Input placeholder="Search for anything..." class="rounded-md"/>
 </div>
 
-<div class="grid grid-cols-2 gap-4 pt-8di">
+<div class="grid grid-cols-2 gap-4 pt-8">
 {#each Example as example}
 <div class="flex flex-row gap-2 rounded-lg border p-4 border-border bg-background/50 hover:bg-background transition-colors min-w-0">
     <Image image={example.image} name={example.name} tag={example.tag}/>
