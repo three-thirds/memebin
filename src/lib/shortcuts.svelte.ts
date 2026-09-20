@@ -30,7 +30,7 @@ export function matches (e: KeyboardEvent, shortcut: Shortcut) {
         (e.ctrlKey || e.metaKey) === shortcut.mod &&
         e.shiftKey === shortcut.shift &&
         e.altKey === shortcut.alt &&
-        e.code === shortut.code
+        e.code === shortcut.code
     );
 }
 
