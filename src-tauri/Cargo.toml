@@ -29,6 +29,7 @@ tauri-plugin-shell = "2.3.6"
 window-vibrancy = "0.8.0"
 time = { version = "0.3", features = ["formatting", "macros"] }
 sha2 = "0.10"
+meme-search = { path = "../crates/meme-search" }
 
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration

@@ -1,260 +1,95 @@
 # memebin storage
 
-Local GIF/media library for memebin. This is the contract for **system integration** and **backend** — you should not need to read the Rust sources to wire against storage.
+This is the local GIF library for memebin. If you are wiring the overlay picker, paste path, or sync, you should be able to do it from this page without reading Rust.
 
-## Ownership
+Storage owns files on disk, meme metadata, bindings, and the Tauri commands that talk to them. System integration owns the global hotkey, picker chrome, and clipboard/paste. Backend owns remote sync and accounts later, using the manifest shape described below. Storage never registers OS hotkeys and never touches the clipboard.
 
-| Role | Owns |
-|------|------|
-| **Storage** | Files on disk, metadata, library / bindings / manifest Tauri commands |
-| **System integration** | Global hotkey registration, picker UI chrome, clipboard / paste into the focused app |
-| **Backend** | Remote sync, accounts, packs — use the manifest shape below (no HTTP from storage) |
+For ranked search (`search_memes`, `search_ranked`, `list_tags`, `suggest_tags`), see [search.md](search.md). Note: `search_ranked` returns `{ hits, metrics }` (not a bare array).
 
-Storage never registers OS hotkeys and never touches the clipboard.
+## Where files live
 
-## On-disk layout
+Everything sits under Tauri’s `app_data_dir()`, not in the git repo. There is a `memes/` folder of media files plus JSON sidecars, a top-level `bindings.json` that maps triggers to meme ids, and an optional `search_synonyms.json` for local search expansions (see [search.md](search.md)).
 
-All data lives under Tauri’s `app_data_dir()` (not the git repo):
+On Windows that root is typically under `%APPDATA%\<app identifier>\`. On macOS it is under `~/Library/Application Support/<identifier>/`. On Linux it is under `~/.local/share/<identifier>/`. The identifier comes from `tauri.conf.json` (for example `com.threethirds.tauri-app`).
 
-```text
-<app_data_dir>/
-  memes/
-    <id>.<ext>     # media
-    <id>.json      # Meme sidecar
-  bindings.json    # local trigger → meme_id map
-```
+Call `ensure_storage` at startup. It creates the memes directory if needed and returns that absolute path as a string.
 
-### Platform examples
+Each meme is stored as `<id>.<ext>` next to `<id>.json`. The JSON is the source of truth for metadata.
 
-Paths include the app identifier from `tauri.conf.json` (e.g. `com.threethirds.tauri-app`):
+## What a meme looks like
 
-| OS | Typical root |
-|----|----------------|
-| Windows | `%APPDATA%\<identifier>\` |
-| macOS | `~/Library/Application Support/<identifier>/` |
-| Linux | `~/.local/share/<identifier>/` |
+A meme has an `id` (UUID), a display `name`, a `filename` like `<id>.gif`, and an `extension`. It can have `tags`, optional `aliases` (short names scored by search), a `size_bytes` count, and a `content_hash` (SHA-256 hex of the file bytes, used for dedup). `favorite` is the picker star. `use_count` and optional `last_used_at` (RFC3339) track usage after paste. `created_at` and `updated_at` are also RFC3339 UTC.
 
-Call `ensure_storage` at startup; it creates `memes/` and returns that absolute path.
+Older sidecars that omit newer fields still load. Missing tags or aliases become an empty list, favorite defaults to false, use_count defaults to zero, and so on.
 
-## Schemas
+## Bindings
 
-### Meme
+A binding is a small record with its own `id`, a `trigger` string, and a `meme_id`. Triggers are normalized (trim and lowercase), so `LUL` and `lul` are the same. The meme must already exist when you set a binding. Storage only maps trigger → meme; OS hotkey registration is not storage’s job.
 
-| Field | Type | Notes |
-|-------|------|--------|
-| `id` | `string` | UUID |
-| `name` | `string` | Display name |
-| `filename` | `string` | e.g. `<id>.gif` |
-| `extension` | `string` | `gif`, `webp`, `png`, `jpg`, `jpeg` |
-| `tags` | `string[]` | Searchable |
-| `size_bytes` | `number` | File size |
-| `content_hash` | `string` | SHA-256 hex of file bytes (dedup key) |
-| `favorite` | `boolean` | Picker star |
-| `use_count` | `number` | Incremented by `record_use` |
-| `last_used_at` | `string \| null` | RFC3339 UTC |
-| `created_at` | `string` | RFC3339 UTC |
-| `updated_at` | `string` | RFC3339 UTC |
+## Allowed media
 
-Older sidecars missing newer fields are accepted with defaults (`tags: []`, `favorite: false`, `use_count: 0`, etc.).
+Saves accept `gif`, `webp`, `png`, `jpg`, and `jpeg` (case-insensitive). Anything else is rejected with a clear error string.
 
-### Binding
+## Dedup and repair
 
-| Field | Type | Notes |
-|-------|------|--------|
-| `id` | `string` | UUID |
-| `trigger` | `string` | Normalized (trim + lowercase), e.g. `lul` or `ctrl+shift+m` |
-| `meme_id` | `string` | Must exist when setting |
+When you save from a path or from raw bytes, storage hashes the file. If that hash already exists in the library, you get the existing meme back and no second copy is written.
 
-### LibraryStats
+`repair_orphans` cleans broken pairs: JSON with no media file, or media with no JSON. It returns how many of each it removed (`removed_json`, `removed_media`).
 
-```ts
-{ count: number; favorites: number; total_bytes: number }
-```
+## Library commands
 
-### RepairReport
+Failures come back as string errors. Tauri usually camelCases arguments from the frontend (`sourcePath`, `memeId`).
 
-```ts
-{ removed_json: number; removed_media: number }
-```
+`ensure_storage` takes nothing and returns the memes directory path.
 
-### Manifest (sync handoff)
+`save_meme` takes a `source_path` plus optional `name` and `tags`, copies the file in, writes a sidecar, and returns the `Meme`. `save_meme_bytes` does the same from a byte array and an `extension` (useful for drag-and-drop without a temp path).
 
-```ts
-{
-  version: number;      // currently 1
-  exported_at: string;  // RFC3339
-  memes: Meme[];        // metadata only — no binary blobs
-}
-```
+`list_memes` returns everything sorted by created time descending. `list_memes_sorted` takes a `sort` of `created`, `recent`, `favorites`, or `name`.
 
-### MemeSort
+`get_meme` loads one sidecar by `id`. `meme_path` returns the absolute filesystem path to the media file — that is the paste handoff. `delete_meme` removes media and JSON and also drops any bindings pointing at that id.
 
-`"created"` | `"recent"` | `"favorites"` | `"name"`
+`update_meme` patches optional `name`, `tags`, and/or `aliases` and bumps `updated_at`. `set_favorite` sets the star. `record_use` increments `use_count` and sets `last_used_at`; call it after a successful paste.
 
-### ImportMode
+`library_stats` returns `count`, `favorites`, and `total_bytes`. `repair_orphans` is described above.
 
-`"merge"` — skip entries whose `id` or `content_hash` already exists; only write sidecars when the media file is already on disk (backend must supply files separately).
+For bindings: `list_bindings`, `set_binding(trigger, meme_id)`, `remove_binding(trigger)` (returns whether something was removed), `resolve_trigger` (optional meme), and `resolve_trigger_path` (optional absolute path in one shot).
 
-## Allowed media extensions
+For sync handoff with no HTTP in storage: `export_manifest` returns version `1`, an `exported_at` timestamp, and meme metadata only (no binary blobs). `import_manifest` takes that object and mode `merge`. Merge skips entries whose id or content hash already exists, and only writes sidecars when the media file is already on disk — the backend must supply files separately. It returns how many entries were imported.
 
-`gif`, `webp`, `png`, `jpg`, `jpeg` (case-insensitive). Other extensions are rejected.
+Search commands live in [search.md](search.md).
 
-## Dedup & repair
+## Typical flows
 
-- **Dedup:** `save_meme` / `save_meme_bytes` hash file bytes. If that hash already exists, the existing `Meme` is returned (no second copy).
-- **repair_orphans:** removes JSON without media and media without JSON; returns counts.
+Import then paste: call `ensure_storage`, save with `save_meme` or `save_meme_bytes`, let the picker browse or search, take `meme_path` for the selected id so system integration can paste, then `record_use` when paste succeeds.
 
-## TypeScript types
+Hotkey then paste: system integration registers the OS hotkey. On fire, call `resolve_trigger_path`. If you get a path, paste it, then `record_use` when appropriate.
 
-```ts
-export interface Meme {
-  id: string;
-  name: string;
-  filename: string;
-  extension: string;
-  tags: string[];
-  size_bytes: number;
-  content_hash: string;
-  favorite: boolean;
-  use_count: number;
-  last_used_at: string | null;
-  created_at: string;
-  updated_at: string;
-}
+Favorites and recent: `set_favorite`, then `list_memes_sorted` with `favorites` or `recent`.
 
-export interface Binding {
-  id: string;
-  trigger: string;
-  meme_id: string;
-}
+Backend sync later: one device `export_manifest`, backend stores metadata and moves binaries out of band, another device places media under `memes/` with the expected filenames and calls `import_manifest` with `merge`.
 
-export interface LibraryStats {
-  count: number;
-  favorites: number;
-  total_bytes: number;
-}
-
-export interface RepairReport {
-  removed_json: number;
-  removed_media: number;
-}
-
-export interface Manifest {
-  version: number;
-  exported_at: string;
-  memes: Meme[];
-}
-
-export type MemeSort = "created" | "recent" | "favorites" | "name";
-export type ImportMode = "merge";
-```
-
-## Tauri commands
-
-All commands return `Result` — failures are `string` error messages.
-
-| Command | Args | Returns |
-|---------|------|---------|
-| `ensure_storage` | — | `string` (memes dir path) |
-| `save_meme` | `source_path: string`, `name?: string`, `tags?: string[]` | `Meme` |
-| `save_meme_bytes` | `bytes: number[]`, `extension: string`, `name?: string`, `tags?: string[]` | `Meme` |
-| `list_memes` | — | `Meme[]` (created desc) |
-| `list_memes_sorted` | `sort: MemeSort` | `Meme[]` |
-| `get_meme` | `id: string` | `Meme` |
-| `meme_path` | `id: string` | `string` absolute media path |
-| `delete_meme` | `id: string` | `void` (also drops bindings to that id) |
-| `search_memes` | `query: string` | `Meme[]` (name + tags, case-insensitive) |
-| `update_meme` | `id: string`, `name?: string`, `tags?: string[]` | `Meme` |
-| `record_use` | `id: string` | `Meme` |
-| `set_favorite` | `id: string`, `favorite: boolean` | `Meme` |
-| `library_stats` | — | `LibraryStats` |
-| `repair_orphans` | — | `RepairReport` |
-| `list_bindings` | — | `Binding[]` |
-| `set_binding` | `trigger: string`, `meme_id: string` | `Binding` |
-| `remove_binding` | `trigger: string` | `boolean` |
-| `resolve_trigger` | `trigger: string` | `Meme \| null` |
-| `resolve_trigger_path` | `trigger: string` | `string \| null` |
-| `export_manifest` | — | `Manifest` |
-| `import_manifest` | `manifest: Manifest`, `mode: ImportMode` | `number` (imported count) |
-
-## Invoke examples
+## Example invoke
 
 ```ts
 import { invoke } from "@tauri-apps/api/core";
-import type { Binding, Manifest, Meme, MemeSort } from "./storage-types"; // or copy types above
 
-await invoke<string>("ensure_storage");
+await invoke("ensure_storage");
 
-const meme = await invoke<Meme>("save_meme", {
+const meme = await invoke("save_meme", {
   sourcePath: "C:/tmp/cat.gif",
   name: "Funny cat",
   tags: ["cat", "lol"],
 });
 
-const fromBytes = await invoke<Meme>("save_meme_bytes", {
-  bytes: Array.from(uint8Array),
-  extension: "gif",
-  name: "drag-drop",
-  tags: [],
-});
+const path = await invoke("meme_path", { id: meme.id });
+await invoke("record_use", { id: meme.id });
 
-const all = await invoke<Meme[]>("list_memes");
-const recent = await invoke<Meme[]>("list_memes_sorted", { sort: "recent" satisfies MemeSort });
-const hits = await invoke<Meme[]>("search_memes", { query: "cat" });
-
-const path = await invoke<string>("meme_path", { id: meme.id });
-await invoke<Meme>("record_use", { id: meme.id }); // after successful paste
-
-await invoke<Binding>("set_binding", { trigger: "lul", memeId: meme.id });
-const pastePath = await invoke<string | null>("resolve_trigger_path", { trigger: "lul" });
-
-const manifest = await invoke<Manifest>("export_manifest");
-const imported = await invoke<number>("import_manifest", {
-  manifest,
-  mode: "merge",
-});
+await invoke("set_binding", { trigger: "lul", memeId: meme.id });
+const pastePath = await invoke("resolve_trigger_path", { trigger: "lul" });
 ```
 
-Note: Tauri typically camelCases command arguments (`sourcePath`, `memeId`).
+## What storage does not do
 
-## Recommended flows
+No global hotkey registration, tray UI, clipboard, or paste simulation. No HTTP, auth, or cloud client. No SQLite for now — JSON sidecars are enough.
 
-### Import → picker → paste
-
-1. `ensure_storage`
-2. `save_meme` or `save_meme_bytes`
-3. Picker: `list_memes` / `list_memes_sorted` / `search_memes`
-4. On select: `meme_path(id)` → system integration pastes that file
-5. After paste succeeds: `record_use(id)`
-
-### Hotkey → paste
-
-1. System integration registers the OS hotkey (not storage)
-2. On fire: `resolve_trigger_path(trigger)` → absolute path or `null`
-3. Paste; then `record_use` if resolved
-
-### Favorites / recent
-
-- `set_favorite(id, true|false)`
-- `list_memes_sorted` with `"favorites"` or `"recent"`
-
-### Backend sync (later)
-
-1. Client: `export_manifest`
-2. Backend stores metadata; transfers binaries out of band
-3. Other device: place media files under `memes/` with expected filenames, then `import_manifest(manifest, "merge")`
-
-## Out of scope
-
-- Global hotkey registration, tray, clipboard, paste simulation
-- HTTP / auth / cloud clients
-- SQLite (JSON sidecars for now)
-
-## Branch workflow
-
-Storage work targets the `meme-storage` branch. Rebase on `main` before pushing:
-
-```bash
-git fetch origin
-git rebase origin/main
-```
+Work for this area lands on the storage/search branches; rebase on `main` before you push.

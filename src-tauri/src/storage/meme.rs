@@ -11,6 +11,9 @@ pub struct Meme {
     pub extension: String,
     #[serde(default)]
     pub tags: Vec<String>,
+    /// Short names / nicknames included in ranked search.
+    #[serde(default)]
+    pub aliases: Vec<String>,
     #[serde(default)]
     pub size_bytes: u64,
     #[serde(default)]
@@ -70,6 +73,7 @@ mod tests {
             filename: "abc.gif".into(),
             extension: String::new(),
             tags: vec![],
+            aliases: vec![],
             size_bytes: 0,
             content_hash: String::new(),
             favorite: false,
