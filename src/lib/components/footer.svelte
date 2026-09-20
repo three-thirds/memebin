@@ -1,18 +1,34 @@
 <script lang="ts">
     import { openUrl } from "@tauri-apps/plugin-opener";
     import UserSettings from "$lib/components/dialogs/usersettings.svelte";
-    import {shortcuts, matches } from "$lib/shortcuts.svelte";
+    import {shortcuts, matches, toAccelerator, type ActionId } from "$lib/shortcuts.svelte";
+    import { invoke } from "@tauri-apps/api/core";
 
 
     let settingsOpen = $state(false);
 
+    const handlers: Record<ActionId, ()=> void> = {
+        settings: () => (settingsOpen = true),
+        popup: () => {}
+    }
+
     function scanKeys(e: KeyboardEvent) {
         if (shortcuts.recording) return;
-        if (matches(e, shortcuts.settings)) {
-            e.preventDefault();
-            settingsOpen = true;
+        for (const id of Object.keys(handlers) as ActionId[]) {
+            if (matches(e, shortcuts.bindings[id])) {
+                e.preventDefault();
+                handlers[id]();
+                return;
+            }
         }
     }
+
+    $effect(() =>{
+        const accel = toAccelerator(shortcuts.bindings.popup);
+        invoke("set_popup_shortcut", {shortcut: accel})
+            .then(() => (shortcuts.error = ""))
+            .catch((err) => (shortcuts.error = String(err)))
+    })
 </script>
 
 <svelte:window onkeydown={scanKeys}></svelte:window>

@@ -17,7 +17,7 @@
     class="flex items-center gap-1.5 rounded-full border border-border bg-secondary/60 px-2 py-1 text-xs font-medium text-secondary-foreground hover:bg-secondary cursor-pointer"
     onclick={() => {}}>
         <span>Actions</span>
-        {#each formatShortcut(shortcuts.settings) as key}
+        {#each formatShortcut(shortcuts.bindings.settings) as key}
             <kbd>{key}</kbd>
         {/each}
     </button>
@@ -47,21 +47,52 @@
 
         <div class="flex shrink-0 items-center gap-2">
             <button type="button"
-                onclick={() => (shortcuts.recording = true)}
-                onkeydown={(e) => shortcuts.recording && capture(e)}
-                onblur={() => (shortcuts.recording = false)}
+                onclick={() => {shortcuts.error = ""; shortcuts.recording = "settings"}}
+                onkeydown={capture}
+                onblur={() => (shortcuts.recording = null)}
                 class="col-span-3 flex items-center gap-1.5 rounded-md border p-1 text-sm font-medium hover:cursor-pointer text-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
-                {#if shortcuts.recording}
+                {#if shortcuts.recording === "settings"}
                     <span>Press Keys ... <span class="text-xs">(Esc to cancel)</span></span>
                 {:else}
-                    {#each formatShortcut(shortcuts.settings) as key}
+                    {#each formatShortcut(shortcuts.bindings.settings) as key}
                         <kbd>{key}</kbd>
                     {/each}
                 {/if}
             </button>
 
-            <button onclick={() => reset()}
+            <button onclick={() => reset("settings")}
+            class={cn(buttonVariants({ variant: "outline" }), "rounded-md")}>
+                Reset
+            </button>
+        </div>
+    </div>
+
+    <div class="flex items-center justify-between gap-4 rounded-lg border bg-card/50 p-3">
+        <div class="min-w-0">
+            <p class="text-sm font-medium leading-none">Open Popup</p>
+            <p class="mt-1.5 text-xs text-muted-foreground">
+                Click the box, then press a new combination that includes at least one mod key :p
+            </p>
+        </div>
+
+        <div class="flex shrink-0 items-center gap-2">
+            <button type="button"
+                onclick={() => {shortcuts.error = ""; shortcuts.recording = "popup"}}
+                onkeydown={capture}
+                onblur={() => (shortcuts.recording = null)}
+                class="col-span-3 flex items-center gap-1.5 rounded-md border p-1 text-sm font-medium hover:cursor-pointer text-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+                {#if shortcuts.recording === "popup"}
+                    <span>Press Keys ... <span class="text-xs">(Esc to cancel)</span></span>
+                {:else}
+                    {#each formatShortcut(shortcuts.bindings.popup) as key}
+                        <kbd>{key}</kbd>
+                    {/each}
+                {/if}
+            </button>
+
+            <button onclick={() => reset("popup")}
             class={cn(buttonVariants({ variant: "outline" }), "rounded-md")}>
                 Reset
             </button>
