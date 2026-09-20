@@ -51,4 +51,8 @@ export function capture(e: KeyboardEvent) {
         shortcuts.recording = false;
         return;
     }
+
+    if(["Control", "Shift", "Alt", "Meta"].includes(e.key)) return;
+
+    if(!(e.ctrlKey || e.metaKey || e.altKey )) return;
 }
