@@ -3,6 +3,10 @@
     import { buttonVariants } from "$lib/components/ui/button/index.js";
     import { shortcuts, formatShortcut, capture, reset} from "$lib/shortcuts.svelte";
     import {cn} from "$lib/utils.js";
+    import {Switch } from "$lib/components/ui/switch/index.js";
+    import { IconMoon, IconMoonFilled } from '@tabler/icons-svelte-runes';
+    import { IconSun, IconSunFilled } from '@tabler/icons-svelte-runes';
+    import {mode, setMode} from "mode-watcher";
 
     let { open= $bindable(false)} = $props();
 </script>
@@ -32,6 +36,7 @@
         Shortcuts
     </h3>
 
+    <!-- Open Menu Settings -->
     <div class="flex items-center justify-between gap-4 rounded-lg border bg-card/50 p-3">
         <div class="min-w-0">
             <p class="text-sm font-medium leading-none">Open Settings</p>
@@ -61,6 +66,35 @@
                 Reset
             </button>
         </div>
+    </div>
+
+
+    <!-- Dark / Light mode toggle -->
+    <div class="flex items-center justify-between gap-4 rounded-lg border bg-card/50 p-3">
+        <div class="min-w-0">
+            <p class="text-sm font-medium leading-none">Color Mode</p>
+            <p class="mt-1.5 text-xs text-muted-foreground">
+                Dark Mode / Light Mode
+            </p>
+        </div>
+
+        <div class="flex items-center gap-2">
+            {#if mode.current === "light"}
+                <IconSunFilled size={16} class="text-muted-foreground" />
+            {:else}
+                <IconSun size={16} class="text-muted-foreground" />
+            {/if}
+
+            <Switch 
+            checked={mode.current === "dark"}
+            onCheckedChange={(checked: boolean) => setMode(checked ? "dark" : "light")}/>
+            {#if mode.current === "dark"}
+                <IconMoonFilled size={16} class="text-muted-foreground" />
+            {:else}
+                <IconMoon size={16} class="text-muted-foreground" />
+            {/if}
+        </div>
+
     </div>
 
 </section>
