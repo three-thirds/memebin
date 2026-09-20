@@ -1,156 +1,73 @@
 <script lang="ts">
-  import { invoke } from "@tauri-apps/api/core";
+    import { Input } from "$lib/components/ui/input/index.js";
+    import * as Dialog from "$lib/components/ui/dialog/index.js";
+    import { buttonVariants } from "$lib/components/ui/button/index.js";
+    import { IconTag } from '@tabler/icons-svelte-runes';
+    import { IconStar,IconStarFilled} from '@tabler/icons-svelte-runes';
+    import Starred from "$lib/components/starred.svelte";
 
-  let name = $state("");
-  let greetMsg = $state("");
+    import ChangeMenu from "$lib/components/dialogs/changemenu.svelte";
 
-  async function greet(event: Event) {
-    event.preventDefault();
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    greetMsg = await invoke("greet", { name });
-  }
+    export const Example = [
+        {
+            image: "https://cdn.hackclub.com/01a0a4b5-fc23-7376-beb8-64e977a42f13/image.png", 
+            name: "Diet Lmao",
+            uses: 6,
+            tag: "Group Chat"
+        },
+        {
+            image: "https://cdn.hackclub.com/01a0a4b5-fc23-7376-beb8-64e977a42f13/image.png", 
+            name: "Diet Lmao",
+            uses: 6,
+            tag: "Group Chat"
+        },
+        {
+            image: "https://cdn.hackclub.com/01a0a4b5-fc23-7376-beb8-64e977a42f13/image.png", 
+            name: "Diet Lmao",
+            uses: 6,
+            tag: "Group Chat"
+        },
+
+    ]
+
+    let changeopen = $state(false)
+
+    function handleRightClick(e: MouseEvent) {
+        e.preventDefault();
+        changeopen = true;
+    }
+
+    let starred = $state(false)
+
+    import Image from "$lib/components/dialogs/image.svelte";
+
 </script>
 
-<main class="container">
-  <h1>Welcome to Tauri + Svelte</h1>
+<div class="flex flex-col items-stretch gap-8 sm:flex-row">
+<Input placeholder="Search for anything..." class="rounded-md"/>
+</div>
 
-  <div class="row">
-    <a href="https://vite.dev" target="_blank">
-      <img src="/vite.svg" class="logo vite" alt="Vite Logo" />
-    </a>
-    <a href="https://tauri.app" target="_blank">
-      <img src="/tauri.svg" class="logo tauri" alt="Tauri Logo" />
-    </a>
-    <a href="https://svelte.dev" target="_blank">
-      <img src="/svelte.svg" class="logo svelte-kit" alt="SvelteKit Logo" />
-    </a>
-  </div>
-  <p>Click on the Tauri, Vite, and SvelteKit logos to learn more.</p>
+<div class="grid grid-cols-2 gap-4 pt-8">
+{#each Example as example}
+<div class="flex flex-row gap-2 rounded-lg border p-4 border-border bg-background/50 hover:bg-background transition-colors min-w-0">
+    <Image image={example.image} name={example.name} tag={example.tag}/>
+    
+    <div role="button" tabindex="0" aria-haspopup="menu" oncontextmenu={handleRightClick} class="flex min-w-0 flex-col gap-1 items-start justify-between border-l border-dashed p-2">
+        <div>
+            <h3 class="text-sm font-medium leading-none">{example.name}</h3>
+            <h4 class="text-xs text-muted-foreground"><b>Uses:</b> {example.uses}</h4>
+            <Starred />
+        </div>
+        <p 
+        class="flex max-w-full min-w-0 items-center gap-1.5 overflow-hidden rounded-2xl border border-border bg-secondary/60 px-2 py-1 text-xs font-medium text-secondary-foreground hover:bg-secondary cursor-pointer">
+            <IconTag stroke={2} size={16.7} class="shrink-0"/>
+            <kbd class="max-w-16 truncate">{example.tag}</kbd>
+        </p>
+    </div>
 
-  <form class="row" onsubmit={greet}>
-    <input id="greet-input" placeholder="Enter a name..." bind:value={name} />
-    <button type="submit">Greet</button>
-  </form>
-  <p>{greetMsg}</p>
-</main>
+    <ChangeMenu bind:open={changeopen} image={example.image} name={example.name} tag={example.tag}/>
+</div>
+{/each}
+</div>
 
-<style>
-.logo.vite:hover {
-  filter: drop-shadow(0 0 2em #747bff);
-}
 
-.logo.svelte-kit:hover {
-  filter: drop-shadow(0 0 2em #ff3e00);
-}
-
-:root {
-  font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
-  font-size: 16px;
-  line-height: 24px;
-  font-weight: 400;
-
-  color: #0f0f0f;
-  background-color: #f6f6f6;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  -webkit-text-size-adjust: 100%;
-}
-
-.container {
-  margin: 0;
-  padding-top: 10vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  text-align: center;
-}
-
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: 0.75s;
-}
-
-.logo.tauri:hover {
-  filter: drop-shadow(0 0 2em #24c8db);
-}
-
-.row {
-  display: flex;
-  justify-content: center;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-
-a:hover {
-  color: #535bf2;
-}
-
-h1 {
-  text-align: center;
-}
-
-input,
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  color: #0f0f0f;
-  background-color: #ffffff;
-  transition: border-color 0.25s;
-  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
-}
-
-button {
-  cursor: pointer;
-}
-
-button:hover {
-  border-color: #396cd8;
-}
-button:active {
-  border-color: #396cd8;
-  background-color: #e8e8e8;
-}
-
-input,
-button {
-  outline: none;
-}
-
-#greet-input {
-  margin-right: 5px;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    color: #f6f6f6;
-    background-color: #2f2f2f;
-  }
-
-  a:hover {
-    color: #24c8db;
-  }
-
-  input,
-  button {
-    color: #ffffff;
-    background-color: #0f0f0f98;
-  }
-  button:active {
-    background-color: #0f0f0f69;
-  }
-}
-
-</style>
