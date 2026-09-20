@@ -10,8 +10,9 @@
 //!    compositor configs.
 //! 3. Desktop Native Shortcuts: On Windows and macOS, native global shortcuts (`Ctrl+Shift+M`)
 //!    are registered to toggle window state.
+use std::sync::Mutex;
 use tauri::{App, AppHandle, Manager, Window, WindowEvent};
-use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut};
+use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
 /// Handles blur, focus and window lifecycle events
 ///
@@ -54,27 +55,78 @@ pub fn handle_single_instance(app: &AppHandle, _args: Vec<String>, _cwd: String)
 /// Returns an error if:
 /// * The shortcut string fails to parse into a valid key combination.
 /// * The operating system fails to bind the shortcut (e.g. key combination already claimed).
-pub fn setup_shortcuts(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
-    let window = app.get_webview_window("main").unwrap();
+/// 
+// pub fn setup_shortcuts(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
+//     let window = app.get_webview_window("main").unwrap();
 
-    let hotkey: Shortcut = "Ctrl+Shift+M".parse().unwrap();
-    println!("{:?}", hotkey);
+//     let hotkey: Shortcut = "Ctrl+Shift+M".parse().unwrap();
+//     println!("{:?}", hotkey);
 
-    let win = window.clone();
+//     let win = window.clone();
+//     app.global_shortcut()
+//         .on_shortcut(hotkey, move |_app, _shortcut, event| {
+//             println!("RAW EVENT DETECTED! {:?}", event);
+//             use tauri_plugin_global_shortcut::ShortcutState;
+
+//             if event.state == ShortcutState::Pressed {
+//                 if win.is_visible().unwrap_or(false) {
+//                     let _ = win.hide();
+//                     println!("Shortcut Pressed");
+//                 } else {
+//                     let _ = win.show();
+//                     let _ = win.set_focus();
+//                 }
+//             }
+//         })?;
+//     Ok(())
+// }
+
+
+pub struct PopupShortcut(pub Mutex<Option<Shortcut>>);
+
+fn toggle_main(app: &AppHandle) {
+    if let Some(win) = app.get_webview_window("main") {
+        if win.is_visible().unwrap_or(false) {
+            let _ = win.hide();
+        } else {
+            let _ = win.show();
+            let _ = win.set_focus();
+        }
+    }
+}
+
+pub fn register_popup(app: &AppHandle, accel: &str) -> Result<(), String> {
+    let new: Shortcut = accel.parse().map_err(|e| format!("Failed to parse shortcut: {}", e))?;
+    let state = app.state::<PopupShortcut>();
+    let mut current = state.0.lock().unwrap();
+
+    if *current == Some(new) {
+        return Ok(());
+    }
+
     app.global_shortcut()
-        .on_shortcut(hotkey, move |_app, _shortcut, event| {
-            println!("RAW EVENT DETECTED! {:?}", event);
-            use tauri_plugin_global_shortcut::ShortcutState;
-
+        .on_shortcut(new, |app, _shortcut, event| {
             if event.state == ShortcutState::Pressed {
-                if win.is_visible().unwrap_or(false) {
-                    let _ = win.hide();
-                    println!("Shortcut Pressed");
-                } else {
-                    let _ = win.show();
-                    let _ = win.set_focus();
-                }
+                toggle_main(app);
             }
-        })?;
+        })
+        .map_err(|e| e.to_string())?;
+
+    if let Some(old) = current.take() {
+        let _ = app.global_shortcut().unregister(old);
+    }
+    *current = Some(new);
     Ok(())
 }
+
+#[tauri::command]
+pub fn set_popup_shortcut(app: AppHandle, shortcut: String) -> Result<(), String> {
+    register_popup(&app, &shortcut)
+}
+
+pub fn setup_shortcuts(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
+    // default only; the frontend overrides it with the saved binding on startup
+    let _ = register_popup(app.handle(), "CommandOrControl+Shift+M");
+    Ok(())
+}
+

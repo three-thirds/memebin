@@ -8,3 +8,10 @@ node_modules
 !.env.example
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Rust — root leftovers (no workspace package; app lockfile is src-tauri/Cargo.lock)
+/target/
+/Cargo.lock
+
+# Path crates (e.g. meme-search)
+crates/**/target/

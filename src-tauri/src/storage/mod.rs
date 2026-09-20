@@ -1,13 +1,20 @@
 mod bindings;
 mod meme;
+mod search;
 
 pub use bindings::Binding;
 pub use meme::Meme;
+pub use search::{SearchIndexCache, SearchOptions, SearchRankedResult};
+#[allow(unused_imports)]
+pub use search::{SearchHit, SearchSort};
 
 use bindings::{
     load_bindings, normalize_trigger, remove_binding_by_trigger, save_bindings, upsert_binding,
 };
 use meme::{read_sidecar, write_sidecar};
+use search::{
+    collect_tags, enrich_aliases_from_bindings, load_synonyms, rank_memes, suggest_tags_for,
+};
 
 use sha2::{Digest, Sha256};
 use std::fs;
@@ -96,6 +103,16 @@ fn bindings_path(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(app_data_dir(app)?.join("bindings.json"))
 }
 
+fn synonyms_path(app: &AppHandle) -> Result<PathBuf, String> {
+    Ok(app_data_dir(app)?.join("search_synonyms.json"))
+}
+
+fn invalidate_search_cache(app: &AppHandle) {
+    if let Some(cache) = app.try_state::<SearchIndexCache>() {
+        cache.invalidate();
+    }
+}
+
 /// Ensure storage dirs exist; returns the memes directory path.
 pub fn ensure_storage(app: &AppHandle) -> Result<PathBuf, String> {
     let _ = bindings_path(app)?;
@@ -156,17 +173,6 @@ fn sort_memes(mut memes: Vec<Meme>, sort: MemeSort) -> Vec<Meme> {
     memes
 }
 
-pub fn meme_matches_query(meme: &Meme, query: &str) -> bool {
-    let q = query.trim().to_lowercase();
-    if q.is_empty() {
-        return true;
-    }
-    if meme.name.to_lowercase().contains(&q) {
-        return true;
-    }
-    meme.tags.iter().any(|t| t.to_lowercase().contains(&q))
-}
-
 fn persist_new_meme(
     dir: &Path,
     bytes: &[u8],
@@ -191,6 +197,7 @@ fn persist_new_meme(
         filename,
         extension: extension.to_string(),
         tags,
+        aliases: Vec::new(),
         size_bytes: bytes.len() as u64,
         content_hash: hash,
         favorite: false,
@@ -200,6 +207,19 @@ fn persist_new_meme(
         updated_at: now,
     };
     write_sidecar(dir, &meme)?;
+    Ok(meme)
+}
+
+fn persist_and_invalidate(
+    app: &AppHandle,
+    dir: &Path,
+    bytes: &[u8],
+    extension: &str,
+    name: String,
+    tags: Vec<String>,
+) -> Result<Meme, String> {
+    let meme = persist_new_meme(dir, bytes, extension, name, tags)?;
+    invalidate_search_cache(app);
     Ok(meme)
 }
 
@@ -233,7 +253,8 @@ pub fn save_meme(
     });
 
     let dir = memes_dir(app)?;
-    persist_new_meme(
+    persist_and_invalidate(
+        app,
         &dir,
         &bytes,
         &extension,
@@ -254,7 +275,8 @@ pub fn save_meme_bytes(
         return Err("cannot save empty meme bytes".into());
     }
     let dir = memes_dir(app)?;
-    persist_new_meme(
+    persist_and_invalidate(
+        app,
         &dir,
         &bytes,
         &extension,
@@ -309,15 +331,53 @@ pub fn delete_meme(app: &AppHandle, id: &str) -> Result<(), String> {
     if bindings.len() != before {
         save_bindings(&bpath, &bindings)?;
     }
+    invalidate_search_cache(app);
     Ok(())
 }
 
 pub fn search_memes(app: &AppHandle, query: &str) -> Result<Vec<Meme>, String> {
-    let memes = list_memes(app)?;
-    Ok(memes
+    Ok(search_ranked(app, query, SearchOptions::default())?
+        .hits
         .into_iter()
-        .filter(|m| meme_matches_query(m, query))
+        .map(|h| h.meme)
         .collect())
+}
+
+pub fn search_ranked(
+    app: &AppHandle,
+    query: &str,
+    opts: SearchOptions,
+) -> Result<SearchRankedResult, String> {
+    let mut memes = list_memes_in_dir(&memes_dir(app)?)?;
+    enrich_aliases_from_bindings(&mut memes, &bindings_path(app)?);
+    let synonyms = load_synonyms(&synonyms_path(app)?);
+
+    let index = app
+        .try_state::<SearchIndexCache>()
+        .map(|cache| cache.get_or_build(&memes));
+
+    Ok(rank_memes(
+        &memes,
+        query,
+        &opts,
+        Some(&synonyms),
+        index.as_ref(),
+    ))
+}
+
+pub fn list_tags(app: &AppHandle) -> Result<Vec<String>, String> {
+    let memes = list_memes_in_dir(&memes_dir(app)?)?;
+    Ok(collect_tags(&memes))
+}
+
+/// Prefix / fuzzy tag suggestions for picker chips (default limit 20).
+pub fn suggest_tags(
+    app: &AppHandle,
+    prefix: &str,
+    limit: Option<usize>,
+) -> Result<Vec<String>, String> {
+    let memes = list_memes_in_dir(&memes_dir(app)?)?;
+    Ok(suggest_tags_for(&memes, prefix, limit.unwrap_or(20)))
 }
 
 pub fn update_meme(
@@ -325,6 +385,7 @@ pub fn update_meme(
     id: &str,
     name: Option<String>,
     tags: Option<Vec<String>>,
+    aliases: Option<Vec<String>>,
 ) -> Result<Meme, String> {
     let dir = memes_dir(app)?;
     let mut meme = get_meme(app, id)?;
@@ -334,8 +395,12 @@ pub fn update_meme(
     if let Some(tags) = tags {
         meme.tags = tags;
     }
+    if let Some(aliases) = aliases {
+        meme.aliases = aliases;
+    }
     meme.updated_at = now_rfc3339();
     write_sidecar(&dir, &meme)?;
+    invalidate_search_cache(app);
     Ok(meme)
 }
 
@@ -346,6 +411,7 @@ pub fn record_use(app: &AppHandle, id: &str) -> Result<Meme, String> {
     meme.last_used_at = Some(now_rfc3339());
     meme.updated_at = now_rfc3339();
     write_sidecar(&dir, &meme)?;
+    // Index terms unchanged; popularity is scored from fresh sidecars.
     Ok(meme)
 }
 
@@ -355,6 +421,7 @@ pub fn set_favorite(app: &AppHandle, id: &str, favorite: bool) -> Result<Meme, S
     meme.favorite = favorite;
     meme.updated_at = now_rfc3339();
     write_sidecar(&dir, &meme)?;
+    invalidate_search_cache(app);
     Ok(meme)
 }
 
@@ -410,6 +477,7 @@ pub fn repair_orphans(app: &AppHandle) -> Result<RepairReport, String> {
         }
     }
 
+    invalidate_search_cache(app);
     Ok(RepairReport {
         removed_json,
         removed_media,
@@ -428,6 +496,7 @@ pub fn set_binding(app: &AppHandle, trigger: &str, meme_id: &str) -> Result<Bind
     let mut bindings = load_bindings(&path)?;
     let binding = upsert_binding(&mut bindings, trigger, meme_id);
     save_bindings(&path, &bindings)?;
+    invalidate_search_cache(app);
     Ok(binding)
 }
 
@@ -437,6 +506,7 @@ pub fn remove_binding(app: &AppHandle, trigger: &str) -> Result<bool, String> {
     let removed = remove_binding_by_trigger(&mut bindings, trigger);
     if removed {
         save_bindings(&path, &bindings)?;
+        invalidate_search_cache(app);
     }
     Ok(removed)
 }
@@ -507,6 +577,9 @@ pub fn import_manifest(
         imported += 1;
     }
 
+    if imported > 0 {
+        invalidate_search_cache(app);
+    }
     Ok(imported)
 }
 
@@ -523,26 +596,5 @@ mod tests {
     #[test]
     fn normalize_extension_rejects_exe() {
         assert!(normalize_extension("exe").is_err());
-    }
-
-    #[test]
-    fn search_matches_name_and_tags() {
-        let meme = Meme {
-            id: "1".into(),
-            name: "Funny Cat".into(),
-            filename: "1.gif".into(),
-            extension: "gif".into(),
-            tags: vec!["lol".into(), "animals".into()],
-            size_bytes: 10,
-            content_hash: "abc".into(),
-            favorite: false,
-            use_count: 0,
-            last_used_at: None,
-            created_at: "t".into(),
-            updated_at: "t".into(),
-        };
-        assert!(meme_matches_query(&meme, "cat"));
-        assert!(meme_matches_query(&meme, "LOL"));
-        assert!(!meme_matches_query(&meme, "dog"));
     }
 }
