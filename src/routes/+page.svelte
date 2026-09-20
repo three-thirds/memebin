@@ -9,12 +9,13 @@
   import { api, type Meme } from "$lib/api";
   import { onMount } from "svelte";
   import { convertFileSrc } from "@tauri-apps/api/core";
-  import { capture } from "$lib/shortcuts.svelte";
 
   let storageDir = $state("");
   let memes = $state<Meme[]>([]);
   let searchQuery = $state("");
   let changeopen = $state(false);
+  let selectedIndex = $state(0);
+  let selectedMeme = $state<Meme | null>(null);
 
   onMount(() => {
     async function init() {
@@ -30,6 +31,21 @@
     const handleKeyDown = async (e: KeyboardEvent) => {
       if (e.key == "Escape") {
         await api.dismiss();
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        if (memes.length > 0) {
+          selectedIndex = (selectedIndex + 1) % memes.length;
+        }
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        if (memes.length > 0) {
+          selectedIndex = (selectedIndex - 1 + memes.length) % memes.length;
+        }
+      } else if (e.key === "Enter") {
+        if (memes.length > 0 && memes[selectedIndex]) {
+          e.preventDefault();
+          await handleCopy(memes[selectedIndex]);
+        }
       }
     };
 
@@ -57,6 +73,7 @@
   });
 
   async function handleSearch(e: Event) {
+    selectedIndex = 0;
     const query = (e.target as HTMLInputElement).value;
     searchQuery = query;
 
@@ -75,8 +92,9 @@
     }
   }
 
-  function handleRightClick(e: MouseEvent) {
+  function handleRightClick(e: MouseEvent, meme: Meme) {
     e.preventDefault();
+    selectedMeme = meme;
     changeopen = true;
   }
 </script>
@@ -91,11 +109,14 @@
 </div>
 
 <div class="grid grid-cols-2 gap-4 pt-8">
-  {#each memes as meme}
+  {#each memes as meme, index (meme.id)}
     <div
       role="button"
       tabindex="0"
-      class="flex flex-row gap-2 rounded-lg border p-4 border-border bg-background/50 hover:bg-background transition-colors min-w-0"
+      class="flex flex-row gap-2 rounded-lg border p-4 border-border transition-all min-w-0 cursor-pointer {index ===
+      selectedIndex
+        ? 'ring-2 ring-primary bg-accent/80'
+        : 'bg-background/50 hover:bg-background'}"
       onclick={() => handleCopy(meme)}
       onkeydown={(e) => {
         if (e.key === "Enter" || e.key === " ") handleCopy(meme);
@@ -111,7 +132,7 @@
         role="button"
         tabindex="0"
         aria-haspopup="menu"
-        oncontextmenu={handleRightClick}
+        oncontextmenu={(e) => handleRightClick(e, meme)}
         class="flex min-w-0 flex-col gap-1 items-start justify-between border-l border-dashed p-2"
       >
         <div>
@@ -129,13 +150,19 @@
           <kbd class="max-w-16 truncate">{meme.tags[0] ?? "Meme"}</kbd>
         </p>
       </div>
-
-      <ChangeMenu
-        bind:open={changeopen}
-        image={convertFileSrc(`${storageDir}/${meme.filename}`)}
-        name={meme.name}
-        tag={meme.tags[0] ?? "Meme"}
-      />
     </div>
   {/each}
 </div>
+
+{#if selectedMeme}
+  <ChangeMenu
+    bind:open={changeopen}
+    id={selectedMeme.id}
+    image={convertFileSrc(`${storageDir}/${selectedMeme.filename}`)}
+    name={selectedMeme.name}
+    tag={selectedMeme.tags[0] ?? "Meme"}
+    onchange={async () => {
+      memes = await api.listMemes();
+    }}
+  />
+{/if}

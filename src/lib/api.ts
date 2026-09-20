@@ -169,4 +169,15 @@ export const api = {
   async pasteFromClipboard(): Promise<Meme> {
     return await invoke<Meme>('paste_from_clipboard');
   },
+
+  /**
+     * Updates a meme's name and/or tags in storage.
+     */
+  async updateMeme(id: string, name?: string, tags?: string[]): Promise<Meme> {
+    return await invoke<Meme>('update_meme', {
+      id,
+      name: name ?? null,
+      tags: tags ?? null,
+    });
+  },
 };
