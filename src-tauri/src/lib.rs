@@ -2,8 +2,11 @@ pub mod system;
 
 mod storage;
 
-use storage::{Binding, ImportMode, LibraryStats, Manifest, Meme, MemeSort, RepairReport};
-use tauri::AppHandle;
+use storage::{
+    Binding, ImportMode, LibraryStats, Manifest, Meme, MemeSort, RepairReport, SearchIndexCache,
+    SearchOptions, SearchRankedResult,
+};
+use tauri::{AppHandle, Manager};
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -68,13 +71,37 @@ fn search_memes(app: AppHandle, query: String) -> Result<Vec<Meme>, String> {
 }
 
 #[tauri::command]
+fn search_ranked(
+    app: AppHandle,
+    query: String,
+    opts: Option<SearchOptions>,
+) -> Result<SearchRankedResult, String> {
+    storage::search_ranked(&app, &query, opts.unwrap_or_default())
+}
+
+#[tauri::command]
+fn list_tags(app: AppHandle) -> Result<Vec<String>, String> {
+    storage::list_tags(&app)
+}
+
+#[tauri::command]
+fn suggest_tags(
+    app: AppHandle,
+    prefix: String,
+    limit: Option<usize>,
+) -> Result<Vec<String>, String> {
+    storage::suggest_tags(&app, &prefix, limit)
+}
+
+#[tauri::command]
 fn update_meme(
     app: AppHandle,
     id: String,
     name: Option<String>,
     tags: Option<Vec<String>>,
+    aliases: Option<Vec<String>>,
 ) -> Result<Meme, String> {
-    storage::update_meme(&app, &id, name, tags)
+    storage::update_meme(&app, &id, name, tags, aliases)
 }
 
 #[tauri::command]
@@ -151,6 +178,9 @@ pub fn run() {
             meme_path,
             delete_meme,
             search_memes,
+            search_ranked,
+            list_tags,
+            suggest_tags,
             update_meme,
             record_use,
             set_favorite,
@@ -168,6 +198,7 @@ pub fn run() {
         //Hide when someone clicks out of window
         .on_window_event(system::window::handle_window_event)
         .setup(|app| {
+            app.manage(SearchIndexCache::new());
             system::setup(app)?;
             Ok(())
         })
