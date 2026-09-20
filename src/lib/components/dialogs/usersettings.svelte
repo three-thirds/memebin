@@ -19,7 +19,7 @@
 <Dialog.Header>
 <Dialog.Title>Settings</Dialog.Title>
 <Dialog.Description>
-    User Settings & Keybinds
+    User Settings
 </Dialog.Description>
 </Dialog.Header>
 <Dialog.Footer class="sm:justify-start">
