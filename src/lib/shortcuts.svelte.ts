@@ -94,3 +94,12 @@ export function reset(id: ActionId) {
     shortcuts.error = "";
     save();
 }
+
+export function toAccelerator(shortcut: Shortcut) {
+    const parts: string[] = [];
+    if (shortcut.mod) parts.push(isMac ? "Command" : "Ctrl");
+    if (shortcut.alt) parts.push("Alt");
+    if (shortcut.shift) parts.push("Shift");
+    parts.push(shortcut.code.replace(/^Key|^Digit/, ""));
+    return parts.join("+");
+}
