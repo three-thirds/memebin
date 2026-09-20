@@ -55,4 +55,18 @@ export function capture(e: KeyboardEvent) {
     if(["Control", "Shift", "Alt", "Meta"].includes(e.key)) return;
 
     if(!(e.ctrlKey || e.metaKey || e.altKey )) return;
+
+    shortcuts.settings = {
+        mod: e.ctrlKey || e.metaKey, 
+        shift: e.shiftKey,
+        alt: e.altKey,
+        code: e.code
+    };
+    save(shortcuts.settings);
+    shortcuts.recording = false;
+}
+
+export function reset() {
+    shortcuts.settings = { ...DEFAULT };
+    save(shortcuts.settings);
 }

@@ -1,13 +1,15 @@
 <script lang="ts">
     import { openUrl } from "@tauri-apps/plugin-opener";
     import UserSettings from "$lib/components/dialogs/usersettings.svelte";
+    import {shortcuts, matches } from "$lib/shortcuts.svelte";
 
 
     let settingsOpen = $state(false);
 
     function scanKeys(e: KeyboardEvent) {
-        const ctrlKeybleh = e.ctrlKey || e.metaKey; 
-        if (ctrlKeybleh && e.key === "b") {
+        if (shortcuts.recording) return;
+        if (matches(e, shortcuts.settings)) {
+            e.preventDefault();
             settingsOpen = true;
         }
     }
