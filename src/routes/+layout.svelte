@@ -1,17 +1,20 @@
 <script lang="ts">
   import "../app.css";
-    let { children } = $props();
-    import Navbar from "$lib/components/navbar.svelte";
-    import Footer from "$lib/components/footer.svelte";
+  import Footer from "$lib/components/footer.svelte";
 
-    import {ModeWatcher} from "mode-watcher";
+  let { children } = $props();
 </script>
 
-<div class="relative flex min-h-screen flex-col overflow-hidden rounded-2xl border border-border bg-background/30 backdrop-blur-md">
-    <ModeWatcher />
-    <!-- <Navbar /> -->
-    <main class="flex-1 bg-background p-3 pb-15">
-        {@render children()}
-    </main>
+<div
+  class="h-screen w-screen flex flex-col overflow-hidden bg-background text-foreground select-none"
+>
+  <!-- Pinned Content Area (Search + Scrollable Cards) -->
+  <main class="flex-1 min-h-0 flex flex-col overflow-hidden p-3 pb-0">
+    {@render children()}
+  </main>
+
+  <!-- Pinned Sticky Footer -->
+  <div class="shrink-0 border-t border-border/40">
     <Footer />
+  </div>
 </div>
