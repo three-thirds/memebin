@@ -9,6 +9,7 @@
   import { api, type Meme } from "$lib/api";
   import { onMount } from "svelte";
   import { convertFileSrc } from "@tauri-apps/api/core";
+  import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 
   let storageDir = $state("");
   let memes = $state<Meme[]>([]);
@@ -16,6 +17,7 @@
   let changeopen = $state(false);
   let selectedIndex = $state(0);
   let selectedMeme = $state<Meme | null>(null);
+  let searchInput = $state<HTMLInputElement | null>(null);
 
   onMount(() => {
     async function init() {
@@ -29,23 +31,39 @@
     init();
 
     const handleKeyDown = async (e: KeyboardEvent) => {
-      if (e.key == "Escape") {
+      if (changeopen) return;
+
+      if (e.key === "Escape") {
         await api.dismiss();
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        if (memes.length > 0) {
+          selectedIndex = Math.min(selectedIndex + 1, memes.length - 1);
+        }
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        if (memes.length > 0) {
+          selectedIndex = Math.max(selectedIndex - 1, 0);
+        }
       } else if (e.key === "ArrowDown") {
         e.preventDefault();
         if (memes.length > 0) {
-          selectedIndex = (selectedIndex + 1) % memes.length;
+          selectedIndex = Math.min(selectedIndex + 2, memes.length - 1);
         }
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
         if (memes.length > 0) {
-          selectedIndex = (selectedIndex - 1 + memes.length) % memes.length;
+          selectedIndex = Math.max(selectedIndex - 2, 0);
         }
       } else if (e.key === "Enter") {
         if (memes.length > 0 && memes[selectedIndex]) {
           e.preventDefault();
           await handleCopy(memes[selectedIndex]);
         }
+      } else if (e.key === "/" && document.activeElement !== searchInput) {
+        e.preventDefault();
+        searchInput?.focus();
+        searchInput?.select();
       }
     };
 
@@ -85,6 +103,7 @@
   }
 
   async function handleCopy(meme: Meme) {
+    getCurrentWebviewWindow().hide();
     try {
       await api.copyAndDismiss(meme);
     } catch (err) {
@@ -101,6 +120,7 @@
 
 <div class="flex flex-col items-stretch gap-8 sm:flex-row">
   <Input
+    bind:ref={searchInput}
     placeholder="Search for anything..."
     class="rounded-md"
     value={searchQuery}
@@ -118,6 +138,7 @@
         ? 'ring-2 ring-primary bg-accent/80'
         : 'bg-background/50 hover:bg-background'}"
       onclick={() => handleCopy(meme)}
+      oncontextmenu={(e) => handleRightClick(e, meme)}
       onkeydown={(e) => {
         if (e.key === "Enter" || e.key === " ") handleCopy(meme);
       }}
@@ -128,11 +149,12 @@
         tag={meme.tags[0] ?? "Meme"}
       />
 
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
       <div
         role="button"
         tabindex="0"
         aria-haspopup="menu"
-        oncontextmenu={(e) => handleRightClick(e, meme)}
+        onclick={(e) => e.stopPropagation()}
         class="flex min-w-0 flex-col gap-1 items-start justify-between border-l border-dashed p-2"
       >
         <div>

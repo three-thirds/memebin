@@ -159,7 +159,7 @@ export const api = {
   },
 
   /**
-   * Dismisses the launcher overlay without copying anything.
+  * Dismisses the launcher overlay without copying anything.
    */
   async dismiss(): Promise<void> {
     const window = getCurrentWebviewWindow();
