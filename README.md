@@ -17,6 +17,13 @@
 1. Go to the [**Releases**](https://github.com/three-thirds/memebin/releases) page
 2. Download the installer for your OS on the latest release
 
+## Some Known Issues
+
+Tauri and AppImages are NOTORIOUSLY famously bad combinations (we realized this a bit too late)
+So if on linux, please try out installing from .deb or .rpm files. 
+The app has been tested on Fedora 44, if it does not seem to work dm @Chish on slack to help try to fix it
+Thank you.
+
 ## Local Development
 
 ```bash
